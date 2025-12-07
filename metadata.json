@@ -1,0 +1,5 @@
+{
+  "name": "UBA Academic Management System",
+  "description": "A comprehensive school management system for United Baylor Academy handling roles for Administrators, Facilitators, and Pupils with Stanine grading, challenge tracking, and trend analysis.",
+  "requestFramePermissions": []
+}
