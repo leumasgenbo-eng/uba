@@ -13,7 +13,6 @@ export const dataService = {
     const { data, error } = await query;
     if (error) throw error;
     
-    // Map DB fields to TS Interface if snake_case differs from camelCase
     return (data || []).map(u => ({
         ...u,
         firstName: u.first_name,
@@ -24,7 +23,6 @@ export const dataService = {
   },
 
   addUser: async (user: Omit<User, 'id' | 'lastActivity'>) => {
-    // Note: In real auth, you create auth user first. Here we just insert to public.users for demo
     const { data, error } = await supabase.from('users').insert([{
         first_name: user.firstName,
         last_name: user.lastName,
@@ -40,6 +38,11 @@ export const dataService = {
 
     if (error) throw error;
     return { ...data, firstName: data.first_name, lastName: data.last_name };
+  },
+
+  deleteUser: async (id: string) => {
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) throw error;
   },
 
   // --- Mock Management ---
@@ -68,40 +71,37 @@ export const dataService = {
         subjectId: s.subject_id,
         scoreA: s.score_a,
         scoreB: s.score_b,
-        totalScore: s.total_score,
+        totalScore: s.score_a + s.score_b, // Ensure total is derived
         grade: s.grade,
-        challenges: s.challenges || [], // Array of strings (Challenge IDs)
+        challenges: s.challenges || [],
         remarks: s.remarks
     }));
   },
 
   saveScore: async (score: ScoreRecord) => {
-    // Upsert score
     const { error } = await supabase.from('scores').upsert({
-        id: score.id, // If provided, update, else insert (UUID handling needed in real app if not generated here)
+        id: score.id,
         mock_id: score.mockId,
         pupil_id: score.pupilId,
         subject_id: score.subjectId,
         score_a: score.scoreA,
         score_b: score.scoreB,
-        total_score: score.totalScore,
+        // total_score is generated column in DB usually, but for upsert we might need to omit or pass if not generated always
+        // We rely on DB generated column or calc here.
         grade: score.grade,
         challenges: score.challenges,
         remarks: score.remarks
-    }, { onConflict: 'mock_id, pupil_id, subject_id' }); // Assuming composite constraint
+    }, { onConflict: 'mock_id, pupil_id, subject_id' });
 
     if (error) throw error;
   },
 
   // --- Challenge Management ---
-  getChallenges: async (subjectId: string): Promise<Challenge[]> => {
-    // Get Top Ranked Challenges (by count descending)
-    const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('subject_id', subjectId)
-        .order('count', { ascending: false });
-    
+  getChallenges: async (subjectId?: string): Promise<Challenge[]> => {
+    let query = supabase.from('challenges').select('*').order('count', { ascending: false });
+    if (subjectId) query = query.eq('subject_id', subjectId);
+
+    const { data, error } = await query;
     if (error) throw error;
     return (data || []).map(c => ({
         id: c.id,
@@ -111,9 +111,23 @@ export const dataService = {
     }));
   },
 
+  addChallenge: async (challenge: Omit<Challenge, 'id' | 'count'>) => {
+    const { data, error } = await supabase.from('challenges').insert([{
+      subject_id: challenge.subjectId,
+      text: challenge.text,
+      count: 0
+    }]).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  deleteChallenge: async (id: string) => {
+    const { error } = await supabase.from('challenges').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   incrementChallengeCount: async (ids: string[]) => {
       if (ids.length === 0) return;
-      // In Supabase, can use RPC or loop updates. For simplicity:
       for (const id of ids) {
           const { error } = await supabase.rpc('increment_challenge_count', { row_id: id });
           if(error) console.error("Error incrementing challenge", error);
@@ -122,14 +136,15 @@ export const dataService = {
 
   // --- NRT Processing ---
   processNRTGrading: async (mockId: string, subjectId: string) => {
-      // 1. Fetch all raw scores
+      // 1. Fetch all raw scores from DB to ensure we have the latest batch
       const scores = await dataService.getScores(mockId, subjectId);
-      if (scores.length === 0) return;
+      if (scores.length === 0) return [];
 
-      // 2. Calculate Grades
+      // 2. Calculate Grades using Service Logic (Z-Scores)
       const gradedScores = applyNRTGrading(scores);
 
       // 3. Update DB
+      // We map and upsert. Note: This can be heavy for large sets, okay for class size < 100.
       const updates = gradedScores.map(s => ({
           id: s.id,
           mock_id: s.mockId,
@@ -137,14 +152,14 @@ export const dataService = {
           subject_id: s.subjectId,
           score_a: s.scoreA,
           score_b: s.scoreB,
-          total_score: s.totalScore,
+          grade: s.grade, // Updated Grade
           challenges: s.challenges,
-          remarks: s.remarks,
-          grade: s.grade // The new NRT grade
+          remarks: s.remarks
       }));
 
-      const { error } = await supabase.from('scores').upsert(updates);
+      const { error } = await supabase.from('scores').upsert(updates, { onConflict: 'mock_id, pupil_id, subject_id' });
       if (error) throw error;
+      
       return gradedScores;
   }
 };

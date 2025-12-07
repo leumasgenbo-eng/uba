@@ -12,9 +12,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeRole, activeTab,
   const adminTabs = [
     { id: 'MANAGEMENT_PUPILS', label: '1. Manage Pupils' },
     { id: 'MANAGEMENT_FACILITATORS', label: '2. Manage Facilitators' },
-    { id: 'MOCK_SCORES', label: '3. Entry of Mock Scores' },
-    { id: 'ACADEMIC_REPORT', label: '4. Academic Reports' },
-    { id: 'TREND_ANALYSIS', label: '5. Trend Analysis' },
+    { id: 'MANAGEMENT_CHALLENGES', label: '3. Manage Challenges' },
+    { id: 'MOCK_SCORES', label: '4. Entry of Mock Scores' },
+    { id: 'ACADEMIC_REPORT', label: '5. Academic Reports' },
+    { id: 'TREND_ANALYSIS', label: '6. Trend Analysis' },
   ];
 
   const facilitatorTabs = [
@@ -66,7 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeRole, activeTab,
             onClick={onLogout}
             className="w-full flex items-center justify-center px-4 py-2 text-sm text-blue-200 hover:text-white hover:bg-blue-800 rounded transition-colors"
           >
-            Change Role
+            Sign Out
           </button>
         </div>
       </div>

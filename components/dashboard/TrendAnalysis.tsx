@@ -58,6 +58,19 @@ export const TrendAnalysis = () => {
       
       {/* Gender Distribution Placeholder */}
       <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <h3 className="text-lg font-bold text-ubablue mb-4">Gender Distribution</h3>
+        <div className="h-64 flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+          <svg className="h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+          </svg>
+          <p className="text-gray-500 font-medium text-lg">Gender Distribution Chart Coming Soon</p>
+          <p className="text-sm text-gray-400 mt-1">Visualization pending data integration</p>
+        </div>
+      </div>
+      
+      {/* Demographics & Challenge Analysis */}
+      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h3 className="text-lg font-bold text-ubablue mb-4">Demographics & Challenge Analysis</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 bg-blue-50 rounded text-center">
